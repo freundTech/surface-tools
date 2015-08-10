@@ -1,0 +1,32 @@
+#!/usr/bin/python2
+
+from gtk import gdk
+from xinput import operate_xinput_device, MODE_ENABLE, MODE_DISABLE
+import time
+
+rootw = gdk.Screen().get_root_window()
+
+for d in gdk.devices_list():
+  if d.name == "MICROSOFT SAM" and d.num_axes == 3:
+    pen = d
+
+on = True
+samecount = 0
+oldpos = pen.get_state(rootw)
+
+while True:
+  print pen.get_state(rootw)
+  if pen.get_state(rootw) == oldpos:
+    samecount += 1
+    if samecount >= 2:
+      samecount = 0;
+      if not on:
+        on = True
+        operate_xinput_device(MODE_ENABLE, "Atmel Atmel maXTouch Digitizer")
+  else:
+    if on:
+      on = False
+      operate_xinput_device(MODE_DISABLE, "Atmel Atmel maXTouch Digitizer")
+    samecount = 0
+    oldpos = pen.get_state(rootw)    
+  time.sleep(0.1)
