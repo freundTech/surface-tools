@@ -1,0 +1,120 @@
+#!/usr/bin/python
+
+#####CONFIGURATION#####
+sensorname="accel_3d"
+
+screenname="LVDS1"
+inputnames=[
+        "MICROSOFT SAM"
+        ]
+
+#####PROGRAM CODE#####
+#Do not change unless you know what you are doing!
+
+xrandr="/usr/bin/xrandr"
+xinput="/usr/bin/xinput"
+
+resourcepaths=[
+	"./",
+	"/usr/share/autorotate/",
+	"/usr/local/share/autorotate/"
+	]
+
+matrices={
+        "normal": "1 0 0 0 1 0 0 0 1".split(),
+        "inverted": "-1 0 1 0 -1 1 0 0 1".split(),
+        "left": "0 -1 1 1 0 0 0 0 1".split(),
+        "right": "0 1 0 -1 0 1 0 0 1".split()
+        }
+
+rotlock=False
+
+import pyudev
+import re
+import subprocess
+import os.path
+from gi.repository import Gtk, GdkPixbuf, GObject
+from time import sleep
+
+def twos_comp(val):
+    if val & (1 << (16-1)) != 0:
+        val = val - (1 << 16)
+    return val
+
+def getOrientation(accelX, accelY, accelZ):    
+    absAccelX = abs(accelX)
+    absAccelY = abs(accelY)
+    absAccelZ = abs(accelZ)
+
+    if absAccelZ > 4 * absAccelX and absAccelZ > 4 * absAccelY:
+        orientation = "flat"
+    elif 3 * absAccelY > 2 * absAccelX:
+        orientation = "inverted" if accelY > 0 else "normal"
+    else:
+        orientation = "left" if accelX > 0 else "right"
+
+    return orientation
+
+def rotate(orientation):
+    if orientation in matrices.keys():
+        subprocess.call([xrandr, "--output", screenname, "--rotate", orientation])
+        for input_ in inputnames:
+            pattern = re.compile(input_ + " *\tid=([0-9]+)\t")
+            output = subprocess.check_output(["xinput", "list"]).decode("unicode_escape")
+            matches = re.findall(pattern, output)
+
+            for id in matches:
+                subprocess.call(["xinput", "set-prop", id, "Coordinate Transformation Matrix"] + matrices[orientation])
+
+def toggleRotLock(event):
+    global rotlock
+    global icon
+    global lockrot
+    global unlockrot
+
+    rotlock = not rotlock
+    icon.set_from_pixbuf(lockrot if rotlock else unlockrot)
+
+def checkRotation():
+    if not rotlock:
+        device = pyudev.Device.from_path(context, path)
+        accelX = twos_comp(int(device.attributes["in_accel_x_raw"]))
+        accelY = twos_comp(int(device.attributes["in_accel_y_raw"]))
+        accelZ = twos_comp(int(device.attributes["in_accel_z_raw"]))
+        
+        orientation = getOrientation(accelX, accelY, accelZ)
+    
+        if orientation != prevorientation:
+            rotate(orientation)
+    sleep(1)
+    GObject.idle_add(checkRotation)
+
+context = pyudev.Context()
+for device in context.list_devices(subsystem="iio").match_attribute("name", sensorname): break
+assert device
+
+path = device.device_path
+
+prevorientation = ""
+
+
+for resourcepath in resourcepaths:
+	if os.path.isfile(resourcepath + "rotate_lock.png"):
+		lockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate_lock.png")
+		break
+
+for resourcepathpath in resourcepaths:
+	if os.path.isfile(resourcepath + "rotate.png"):
+		unlockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate.png")
+		break
+
+
+if __name__ == "__main__":
+    GObject.threads_init()
+    
+    global icon
+    icon = Gtk.StatusIcon.new_from_pixbuf(unlockrot)
+    icon.connect("activate", toggleRotLock)
+    
+    GObject.idle_add(checkRotation)
+    Gtk.main()
