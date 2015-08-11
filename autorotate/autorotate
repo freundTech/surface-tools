@@ -36,6 +36,12 @@ import os.path
 from gi.repository import Gtk, GdkPixbuf, GObject
 from time import sleep
 
+hasAppIndicator = True
+try:
+    from gi.repository import AppIndicator3 as AppIndicator
+except:
+    hasAppIndicator = False
+
 def twos_comp(val):
     if val & (1 << (16-1)) != 0:
         val = val - (1 << 16)
@@ -73,7 +79,12 @@ def toggleRotLock(event):
     global unlockrot
 
     rotlock = not rotlock
-    icon.set_from_pixbuf(lockrot if rotlock else unlockrot)
+    if hasAppIndicator:
+        global toggle
+        icon.set_icon(lockrot if rotlock else unlockrot)
+        toggle.set_label("Unlock Rotation" if rotlock else "Lock Rotation")
+    else:
+        icon.set_from_pixbuf(lockrot if rotlock else unlockrot)
 
 def checkRotation():
     if not rotlock:
@@ -97,24 +108,42 @@ path = device.device_path
 
 prevorientation = ""
 
-
 for resourcepath in resourcepaths:
-	if os.path.isfile(resourcepath + "rotate_lock.png"):
-		lockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate_lock.png")
-		break
+    if os.path.isfile(resourcepath + "rotate_lock.png"):
+        if hasAppIndicator:
+            lockrot = resourcepath + "rotate_lock.png"
+        else:
+            lockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate_lock.png")
+        break
 
 for resourcepathpath in resourcepaths:
-	if os.path.isfile(resourcepath + "rotate.png"):
-		unlockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate.png")
-		break
+    if os.path.isfile(resourcepath + "rotate.png"):
+        if hasAppIndicator:
+            unlockrot = resourcepath + "rotate.png"
+        else:
+            unlockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate.png")
+        break
 
 
 if __name__ == "__main__":
     GObject.threads_init()
     
     global icon
-    icon = Gtk.StatusIcon.new_from_pixbuf(unlockrot)
-    icon.connect("activate", toggleRotLock)
+    if hasAppIndicator:
+        icon = AppIndicator.Indicator.new("autorotate", unlockrot, AppIndicator.IndicatorCategory.APPLICATION_STATUS)
+        icon.set_status(AppIndicator.IndicatorStatus.ACTIVE)
+        menu = Gtk.Menu()
+        global toggle
+        toggle = Gtk.MenuItem("Lock Rotation")
+        
+        menu.append(toggle)
+        icon.set_menu(menu)
+        toggle.show()
+
+        toggle.connect("activate", toggleRotLock)
+    else:
+        icon = Gtk.StatusIcon.new_from_pixbuf(unlockrot)
+        icon.connect("activate", toggleRotLock)
     
     GObject.idle_add(checkRotation)
     Gtk.main()
