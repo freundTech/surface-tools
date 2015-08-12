@@ -16,7 +16,7 @@ xbacklight="/usr/bin/xbacklight"
 resourcepaths=[
             "./",
             "/usr/share/autobacklight/",
-            "/usr/local/share/autorotate"
+            "/usr/local/share/autobacklight/"
             ]
 
 def mappingFunction(ambientlight):
