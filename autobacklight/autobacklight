@@ -1,0 +1,126 @@
+#!/usr/bin/python3
+
+#####CONFIGURATION#####
+sensorname="als"
+
+ambientlightmin=1
+ambientlightmax=2000
+
+fadetime=1000
+
+#####PROGRAM CODE#####
+#Do not change unless you know what you are doing
+
+xbacklight="/usr/bin/xbacklight"
+
+resourcepaths=[
+            "./",
+            "/usr/share/autobacklight/",
+            "/usr/local/share/autorotate"
+            ]
+
+def mappingFunction(ambientlight):
+    return (ambientlight / ambientlightmax) * 100
+
+autolightenabled=True
+
+import pyudev
+import subprocess
+import signal
+import os
+import os.path
+from gi.repository import Gtk, GdkPixbuf, GObject
+from time import sleep
+
+hasAppIndicator = True
+try:
+    from gi.repository import AppIndicator3 as AppIndicator
+except:
+    hasAppIndicator = False
+
+def setBacklight(backlight):
+    global process
+
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+        process = None
+    except NameError:
+        pass
+
+    process = subprocess.Popen([xbacklight, "-set", str(backlight), "-time", str(fadetime), "-steps", str((fadetime/1000)*30)], preexec_fn=os.setsid)
+
+def toggleAutolight(event):
+    global autolightenabled
+    global icon
+    global manlight
+    global autolight
+
+    autolightenabled = not autolightenabled
+    if hasAppIndicator:
+        global toggle
+        icon.set_icon(autolight if autolightenabled else manlight)
+        toggle.set_label("Disable automatic backlight" if autolightenabled else "Enable automatic backlight")
+    else:
+        icon.set_from_pixbuf(autolight if autolightenabled else manlight)
+
+def checkLight():
+    if autolightenabled:
+        device = pyudev.Device.from_path(context, path)
+        ambientlight = int(device.attributes["in_intensity_both_raw"])
+
+        backlight = mappingFunction(ambientlight)
+
+        if backlight != prevbacklight:
+            setBacklight(backlight)
+    sleep(1)
+    GObject.idle_add(checkLight)
+
+
+
+context = pyudev.Context()
+for device in context.list_devices(subsystem="iio").match_attribute("name", sensorname): break
+assert device
+
+path = device.device_path
+
+prevbacklight = 30
+
+for resourcepath in resourcepaths:
+    if os.path.isfile(resourcepath + "autolight.png"):
+        if hasAppIndicator:
+            autolight = resourcepath + "autolight.png"
+        else:
+            autolight = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "autolight.png")
+        break
+
+for resourcepathpath in resourcepaths:
+    if os.path.isfile(resourcepath + "manlight.png"):
+        if hasAppIndicator:
+            manlight = resourcepath + "manlight.png"
+        else:
+            manlight = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "manlight.png")
+        break
+
+
+if __name__ == "__main__":
+    GObject.threads_init()
+    
+    global icon
+    if hasAppIndicator:
+        icon = AppIndicator.Indicator.new("autobacklight", autolight, AppIndicator.IndicatorCategory.APPLICATION_STATUS)
+        icon.set_status(AppIndicator.IndicatorStatus.ACTIVE)
+        menu = Gtk.Menu()
+        global toggle
+        toggle = Gtk.MenuItem("Disable automatic backlight")
+        
+        menu.append(toggle)
+        icon.set_menu(menu)
+        toggle.show()
+
+        toggle.connect("activate", toggleAutolight)
+    else:
+        icon = Gtk.StatusIcon.new_from_pixbuf(unlockrot)
+        icon.connect("activate", toggleAutolight)
+    
+    GObject.idle_add(checkLight)
+    Gtk.main()
