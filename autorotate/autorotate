@@ -20,12 +20,17 @@ resourcepaths=[
 	"/usr/local/share/autorotate/"
 	]
 
-matrices={
-        "normal": "1 0 0 0 1 0 0 0 1".split(),
-        "inverted": "-1 0 1 0 -1 1 0 0 1".split(),
-        "left": "0 -1 1 1 0 0 0 0 1".split(),
-        "right": "0 1 0 -1 0 1 0 0 1".split()
+props={
+        "normal":{  "Evdev Axis Inversion": ["0", "0"],
+                    "Evdev Axes Swap": ["0"]},
+        "inverted":{"Evdev Axis Inversion": ["1", "1"],
+                    "Evdev Axes Swap": ["0"]},
+        "left":{    "Evdev Axis Inversion": ["1", "0"],
+                    "Evdev Axes Swap": ["1"]},
+        "right":{   "Evdev Axis Inversion": ["0", "1"],
+                    "Evdev Axes Swap": ["1"]}
         }
+
 
 rotlock=False
 
@@ -70,7 +75,8 @@ def rotate(orientation):
             matches = re.findall(pattern, output)
 
             for id in matches:
-                subprocess.call(["xinput", "set-prop", id, "Coordinate Transformation Matrix"] + matrices[orientation])
+                for key in props[orientation]:
+                    subprocess.call([xinput, "set-prop", id, key] + props[orientation][key])
 
 def toggleRotLock(event):
     global rotlock
