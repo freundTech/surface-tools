@@ -30,7 +30,6 @@ import signal
 import os
 import os.path
 from gi.repository import Gtk, GdkPixbuf, GObject
-from time import sleep
 
 hasAppIndicator = True
 try:
@@ -72,9 +71,7 @@ def checkLight():
 
         if backlight != prevbacklight:
             setBacklight(backlight)
-    sleep(1)
-    GObject.idle_add(checkLight)
-
+    GObject.timeout_add(1000, checkLight)
 
 
 context = pyudev.Context()

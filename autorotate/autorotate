@@ -39,7 +39,6 @@ import re
 import subprocess
 import os.path
 from gi.repository import Gtk, GdkPixbuf, GObject
-from time import sleep
 
 hasAppIndicator = True
 try:
@@ -67,7 +66,7 @@ def getOrientation(accelX, accelY, accelZ):
     return orientation
 
 def rotate(orientation):
-    if orientation in matrices.keys():
+    if orientation in props.keys():
         subprocess.call([xrandr, "--output", screenname, "--rotate", orientation])
         for input_ in inputnames:
             pattern = re.compile(input_ + " *\tid=([0-9]+)\t")
@@ -103,8 +102,7 @@ def checkRotation():
     
         if orientation != prevorientation:
             rotate(orientation)
-    sleep(1)
-    GObject.idle_add(checkRotation)
+    GObject.timeout_add(1000, checkRotation)
 
 context = pyudev.Context()
 for device in context.list_devices(subsystem="iio").match_attribute("name", sensorname): break
