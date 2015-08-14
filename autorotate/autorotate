@@ -12,7 +12,6 @@ inputnames=[
 #Do not change unless you know what you are doing!
 
 xrandr="/usr/bin/xrandr"
-xinput="/usr/bin/xinput"
 
 resourcepaths=[
 	"./",
@@ -20,17 +19,12 @@ resourcepaths=[
 	"/usr/local/share/autorotate/"
 	]
 
-props={
-        "normal":{  "Evdev Axis Inversion": ["0", "0"],
-                    "Evdev Axes Swap": ["0"]},
-        "inverted":{"Evdev Axis Inversion": ["1", "1"],
-                    "Evdev Axes Swap": ["0"]},
-        "left":{    "Evdev Axis Inversion": ["1", "0"],
-                    "Evdev Axes Swap": ["1"]},
-        "right":{   "Evdev Axis Inversion": ["0", "1"],
-                    "Evdev Axes Swap": ["1"]}
-        }
-
+orientations=[
+        "normal",
+        "inverted",
+        "left",
+        "right"
+        ]
 
 rotlock=False
 
@@ -66,16 +60,8 @@ def getOrientation(accelX, accelY, accelZ):
     return orientation
 
 def rotate(orientation):
-    if orientation in props.keys():
+    if orientation in orientations:
         subprocess.call([xrandr, "--output", screenname, "--rotate", orientation])
-        for input_ in inputnames:
-            pattern = re.compile(input_ + " *\tid=([0-9]+)\t")
-            output = subprocess.check_output(["xinput", "list"]).decode("unicode_escape")
-            matches = re.findall(pattern, output)
-
-            for id in matches:
-                for key in props[orientation]:
-                    subprocess.call([xinput, "set-prop", id, key] + props[orientation][key])
 
 def toggleRotLock(event):
     global rotlock

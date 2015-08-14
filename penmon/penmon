@@ -1,0 +1,28 @@
+#!/usr/bin/python
+
+touchscreen="LVDS1"
+inputnames=[
+        "MICROSOFT SAM"
+        ]
+
+xinput="/usr/bin/xinput"
+xrandr="/usr/bin/xrandr"
+
+import re
+import subprocess
+from time import sleep
+
+oldstate = ""
+state = ""
+while True:
+    oldstate = state
+    state = subprocess.check_output([xrandr, "-q"])
+    if state != oldstate:
+        for input_ in inputnames:
+            pattern = re.compile(input_ + " *\tid=([0-9]+)\t")
+            output = subprocess.check_output([xinput, "list"]).decode("unicode_escape")
+            matches = re.findall(pattern, output)
+
+            for id in matches:
+                subprocess.call([xinput, "map-to-output", id, touchscreen])
+    sleep(1)
