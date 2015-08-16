@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
         toggle.connect("activate", toggleAutolight)
     else:
-        icon = Gtk.StatusIcon.new_from_pixbuf(unlockrot)
+        icon = Gtk.StatusIcon.new_from_pixbuf(autolight)
         icon.connect("activate", toggleAutolight)
     
     GObject.idle_add(checkLight)
