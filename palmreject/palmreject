@@ -1,5 +1,12 @@
 #!/usr/bin/python2
 
+#####CONFIGURATION#####
+penname="MIRCOSOFT SAM"
+touchname="Atmel Atmel maXTouch Digitizer"
+
+#####PROGRAM CODE#####
+#Do not change unless you know what you are doing!
+
 from gtk import gdk
 from xinput import operate_xinput_device, MODE_ENABLE, MODE_DISABLE
 import time
@@ -7,7 +14,7 @@ import time
 rootw = gdk.Screen().get_root_window()
 
 for d in gdk.devices_list():
-  if d.name == "MICROSOFT SAM" and d.num_axes == 3:
+  if d.name == penname and d.num_axes == 3:
     pen = d
 
 on = True
@@ -22,11 +29,11 @@ while True:
       samecount = 0;
       if not on:
         on = True
-        operate_xinput_device(MODE_ENABLE, "Atmel Atmel maXTouch Digitizer")
+        operate_xinput_device(MODE_ENABLE, touchname)
   else:
     if on:
       on = False
-      operate_xinput_device(MODE_DISABLE, "Atmel Atmel maXTouch Digitizer")
+      operate_xinput_device(MODE_DISABLE, touchname)
     samecount = 0
     oldpos = pen.get_state(rootw)    
   time.sleep(0.1)

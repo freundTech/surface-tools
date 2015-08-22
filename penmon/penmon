@@ -1,9 +1,13 @@
 #!/usr/bin/python
 
-touchscreen="LVDS1"
+#####CONFIGURATION#####
+screen="LVDS1"
 inputnames=[
         "MICROSOFT SAM"
         ]
+
+#####PROGRAM CODE#####
+#Do not change unless you know what you are doing!
 
 xinput="/usr/bin/xinput"
 xrandr="/usr/bin/xrandr"
@@ -24,5 +28,5 @@ while True:
             matches = re.findall(pattern, output)
 
             for id in matches:
-                subprocess.call([xinput, "map-to-output", id, touchscreen])
+                subprocess.call([xinput, "map-to-output", id, screen])
     sleep(1)
