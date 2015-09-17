@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+
+#####CONFIGURATION#####
+onboard="/usr/bin/onboard"
+keyboardname="MICROSOFT SAM"
+
+nameisdouble=True
+
+#####PROGRAM CODE#####
+#Do not change unless you know what you are doing!
+
+xinput="/usr/bin/xinput"
+killall="/usr/bin/killall"
+
+isrunning=False
+
+import subprocess
+import os
+from time import sleep
+
+def hasKeyboard():
+    output = subprocess.check_output([xinput, "list"]).decode("unicode_escape")
+    
+    if output.count(keyboardname) >= (2 if nameisdouble else 1):
+        return True
+    else:
+        return False
+
+def startOnboard():
+    subprocess.Popen([onboard])
+
+def stopOnboard():
+    subprocess.Popen([killall, os.path.basename(onboard)])
+
+while True:
+    if hasKeyboard():
+        if isrunning:
+            stopOnboard()
+            isrunning = False
+    else:
+        if not isrunning:
+            startOnboard()
+            isrunning = True
+    sleep(1)
