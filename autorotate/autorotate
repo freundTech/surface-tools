@@ -98,7 +98,7 @@ path = device.device_path
 
 prevorientation = ""
 
-for resourcepath in resourcepaths:
+for resourcepath in resourcepaths[::-1]:
     if os.path.isfile(resourcepath + "rotate_lock.png"):
         if hasAppIndicator:
             lockrot = resourcepath + "rotate_lock.png"
