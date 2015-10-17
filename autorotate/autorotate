@@ -83,10 +83,12 @@ def checkRotation():
         accelX = twos_comp(int(device.attributes["in_accel_x_raw"]))
         accelY = twos_comp(int(device.attributes["in_accel_y_raw"]))
         accelZ = twos_comp(int(device.attributes["in_accel_z_raw"]))
-        
+
         orientation = getOrientation(accelX, accelY, accelZ)
-    
+
+        global prevorientation
         if orientation != prevorientation:
+            prevorientation = orientation
             rotate(orientation)
     GObject.timeout_add(1000, checkRotation)
 
