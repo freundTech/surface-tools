@@ -4,9 +4,6 @@
 sensorname="accel_3d"
 
 screenname="LVDS1"
-inputnames=[
-        "MICROSOFT SAM"
-        ]
 
 #####PROGRAM CODE#####
 #Do not change unless you know what you are doing!
@@ -32,6 +29,7 @@ import pyudev
 import re
 import subprocess
 import os.path
+import signal
 from gi.repository import Gtk, GdkPixbuf, GObject
 
 hasAppIndicator = True
@@ -45,7 +43,7 @@ def twos_comp(val):
         val = val - (1 << 16)
     return val
 
-def getOrientation(accelX, accelY, accelZ):    
+def getOrientation(accelX, accelY, accelZ):
     absAccelX = abs(accelX)
     absAccelY = abs(accelY)
     absAccelZ = abs(accelZ)
@@ -83,10 +81,12 @@ def checkRotation():
         accelX = twos_comp(int(device.attributes["in_accel_x_raw"]))
         accelY = twos_comp(int(device.attributes["in_accel_y_raw"]))
         accelZ = twos_comp(int(device.attributes["in_accel_z_raw"]))
-        
+
         orientation = getOrientation(accelX, accelY, accelZ)
-    
+
+        global prevorientation
         if orientation != prevorientation:
+            prevorientation = orientation
             rotate(orientation)
     GObject.timeout_add(1000, checkRotation)
 
@@ -104,20 +104,17 @@ for resourcepath in resourcepaths:
             lockrot = resourcepath + "rotate_lock.png"
         else:
             lockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate_lock.png")
-        break
 
-for resourcepathpath in resourcepaths:
     if os.path.isfile(resourcepath + "rotate.png"):
         if hasAppIndicator:
             unlockrot = resourcepath + "rotate.png"
         else:
             unlockrot = GdkPixbuf.Pixbuf.new_from_file(resourcepath + "rotate.png")
-        break
 
 
 if __name__ == "__main__":
     GObject.threads_init()
-    
+
     global icon
     if hasAppIndicator:
         icon = AppIndicator.Indicator.new("autorotate", unlockrot, AppIndicator.IndicatorCategory.APPLICATION_STATUS)
@@ -125,7 +122,7 @@ if __name__ == "__main__":
         menu = Gtk.Menu()
         global toggle
         toggle = Gtk.MenuItem("Lock Rotation")
-        
+
         menu.append(toggle)
         icon.set_menu(menu)
         toggle.show()
@@ -134,6 +131,10 @@ if __name__ == "__main__":
     else:
         icon = Gtk.StatusIcon.new_from_pixbuf(unlockrot)
         icon.connect("activate", toggleRotLock)
-    
+
+    # Ctrl-c now kills the scipt
+    # https://bugzilla.gnome.org/show_bug.cgi?id=622084#c12
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     GObject.idle_add(checkRotation)
     Gtk.main()
