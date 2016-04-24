@@ -78,9 +78,9 @@ def toggleRotLock(event):
 def checkRotation():
     if not rotlock:
         device = pyudev.Device.from_path(context, path)
-        accelX = twos_comp(int(device.attributes["in_accel_x_raw"]))
-        accelY = twos_comp(int(device.attributes["in_accel_y_raw"]))
-        accelZ = twos_comp(int(device.attributes["in_accel_z_raw"]))
+        accelX = twos_comp(device.attributes.asint("in_accel_x_raw"))
+        accelY = twos_comp(device.attributes.asint("in_accel_y_raw"))
+        accelZ = twos_comp(device.attributes.asint("in_accel_z_raw"))
 
         orientation = getOrientation(accelX, accelY, accelZ)
 
